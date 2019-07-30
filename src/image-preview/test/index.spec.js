@@ -1,9 +1,7 @@
 import Vue from 'vue';
 import ImagePreview from '..';
 import ImagePreviewVue from '../ImagePreview';
-import { mount, trigger, triggerDrag, transitionStub, later } from '../../../test/utils';
-
-transitionStub();
+import { mount, trigger, triggerDrag, later } from '../../../test/utils';
 
 function triggerZoom(el, x, y) {
   trigger(el, 'touchstart', 0, 0, { x, y });
@@ -20,7 +18,7 @@ const images = [
   'https://img.yzcdn.cn/3.png'
 ];
 
-test('render image', () => {
+test('render image', async () => {
   const wrapper = mount(ImagePreviewVue, {
     propsData: { images, value: true }
   });
@@ -31,6 +29,9 @@ test('render image', () => {
   triggerDrag(swipe, 500, 0);
   expect(wrapper.emitted('input')).toBeFalsy();
   triggerDrag(swipe, 0, 0);
+
+  await later(300);
+
   expect(wrapper.emitted('input')[0][0]).toBeFalsy();
   expect(wrapper.emitted('change')[0][0]).toEqual(2);
 });
@@ -64,6 +65,22 @@ test('function call', done => {
   });
 });
 
+test('double click', async done => {
+  const instance = ImagePreview(images);
+
+  const swipe = instance.$el.querySelector('.van-swipe__track');
+  triggerDrag(swipe, 0, 0);
+  triggerDrag(swipe, 0, 0);
+  expect(instance.scale).toEqual(2);
+
+  await later();
+
+  triggerDrag(swipe, 0, 0);
+  triggerDrag(swipe, 0, 0);
+  expect(instance.scale).toEqual(1);
+  done();
+});
+
 test('onClose option', async done => {
   const onClose = jest.fn();
   const instance = ImagePreview({
@@ -75,7 +92,7 @@ test('onClose option', async done => {
   instance.$emit('input', true);
   expect(onClose).toHaveBeenCalledTimes(0);
 
-  await later();
+  await later(300);
 
   const wrapper = document.querySelector('.van-image-preview');
   const swipe = wrapper.querySelector('.van-swipe__track');
